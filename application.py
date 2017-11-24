@@ -19,6 +19,11 @@ def show_item(category_name, item_name):
     return "The selected item."
 
 
+@app.route('/catalog/<string:category_name>/new/')
+def new_item(category_name):
+    return "The page to add a new item to the category."
+
+
 @app.route('/catalog/<string:category_name>/<string:item_name>/edit/')
 def edit_item(category_name, item_name):
     return "The page to edit the selected item."
