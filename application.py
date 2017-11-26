@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from database_setup import Base, User, Category, Item
 
-from flask import make_response
+from flask import make_response, request, redirect
 
 app = Flask(__name__)
 
@@ -21,7 +21,7 @@ session = DBSession()
 
 
 @app.route('/')
-@app.route('/catalog')
+@app.route('/catalog/')
 def show_catalog():
     catalog = session.query(Category.name).all()
     output = ''
@@ -33,10 +33,17 @@ def show_catalog():
 @app.route('/catalog/<string:category_name>/')
 @app.route('/catalog/<string:category_name>/items/')
 def show_category(category_name):
+    # Redirect to a standard URL if required
+    category_name_lcase = category_name.lower()
+    if category_name != category_name_lcase:
+        redirect_url = request.url.replace(category_name, category_name_lcase)
+        return redirect(redirect_url, 302)
+
     items = session.query(Item.name).filter(
         Item.category_id == Category.id,
-        Category.name == category_name
+        func.lower(Category.name) == category_name
     ).all()
+
     output = ''
     for item in items:
         output += item.name + '<br>'
@@ -45,19 +52,32 @@ def show_category(category_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/')
 def show_item(category_name, item_name):
-    item_name = item_name.replace('-', ' ')
+    # Redirect to a standard URL if required
+    category_name_lcase = category_name.lower()
+    item_name_lcase = item_name.lower()
+    if category_name != category_name_lcase or item_name != item_name_lcase:
+        redirect_url = '/catalog/%s/items/%s/' % (
+            category_name_lcase, item_name_lcase
+        )
+        return redirect(redirect_url)
+
+    item_name = item_name.replace('-', '_')
     try:
-        item = session.query(Item.name, Item.description).filter(
+        items = session.query(Item.name, Item.description).filter(
             Item.category_id == Category.id,
-            Category.name == category_name,
-            Item.name == item_name
-        ).one()
+            func.lower(Item.name).like(item_name)
+        ).all()
     except NoResultFound:
         response = make_response("Item not found.", 404)
         return response
 
-    output = item.name + "<br>" + item.description
-    return output
+    for item in items:
+        if item.name.lower().replace(' ', '-') == item_name.replace('_', '-'):
+            output = item.name + "<br>" + item.description
+            return output
+
+    response = make_response("Item not found.", 404)
+    return response
 
 
 @app.route('/catalog/<string:category_name>/new/')
