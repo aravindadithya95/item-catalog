@@ -80,9 +80,55 @@ def show_item(category_name, item_name):
     return response
 
 
-@app.route('/catalog/<string:category_name>/new/')
-def new_item(category_name):
-    return "The page to add a new item to the category."
+@app.route('/catalog/new/', methods=['GET', 'POST'])
+def new_item():
+    if request.method == 'POST':
+        # Form Data
+        name = 'New-Item'
+        description = 'Description for New Item.'
+        category_name = 'Hockey'
+        user_id = 1
+
+        # Get Category ID
+        try:
+            category_id = session.query(Category.id).filter_by(
+                name=category_name
+            ).one().id
+        except NoResultFound:
+            response = make_response("Invalid POST request", 400)
+            return response
+
+        # Check if item already exists in that category
+        item_name = name.replace(' ', '_').lower()
+        try:
+            result = session.query(Item).filter(
+            func.lower(name).like(item_name),
+                category_id == category_id
+            ).all()
+        except NoResultFound:
+            print "pass"
+            pass
+
+        for item in result:
+            if (item.name.lower().replace(' ', '-') ==
+                    item_name.replace('_', '-')):
+                response = make_response("Item already exists in that category.", 409)
+                return response
+
+        # Add item to category
+        new_item = Item(
+            name=name,
+            description=description,
+            category_id=category_id,
+            user_id=user_id
+        )
+        session.add(new_item)
+        session.commit()
+
+        response = make_response("Item added succesfully.", 201)
+        return response
+    else:
+        return "The page to add a new item to the category."
 
 
 @app.route('/catalog/<string:category_name>/<string:item_name>/edit/')
