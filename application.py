@@ -59,7 +59,7 @@ def show_item(category_name, item_name):
         redirect_url = '/catalog/%s/items/%s/' % (
             category_name_lcase, item_name_lcase
         )
-        return redirect(redirect_url)
+        return redirect(redirect_url, 302)
 
     item_name = item_name.replace('-', '_')
     try:
@@ -83,7 +83,7 @@ def show_item(category_name, item_name):
 @app.route('/catalog/new/', methods=['GET', 'POST'])
 def new_item():
     if request.method == 'POST':
-        # Form Data
+        # Form data
         name = 'New-Item'
         description = 'Description for New Item.'
         category_name = 'Hockey'
@@ -131,9 +131,40 @@ def new_item():
         return "The page to add a new item to the category."
 
 
-@app.route('/catalog/<string:category_name>/<string:item_name>/edit/')
+@app.route('/catalog/<string:category_name>/items/<string:item_name>/edit/', methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
-    return "The page to edit the selected item."
+    # Redirect to a standard URL if required
+    category_name_lcase = category_name.lower()
+    item_name_lcase = item_name.lower()
+    if category_name != category_name_lcase or item_name != item_name_lcase:
+        redirect_url = '/catalog/%s/items/%s/edit/' % (
+            category_name_lcase, item_name_lcase
+        )
+        return redirect(redirect_url, 302)
+
+    if request.method == 'POST':
+        # Form data
+        name = 'New Item 2'
+        description = 'New description'
+
+        item_name = item_name.replace('-', '_')
+        try:
+            item_to_edit = session.query(Item).filter(
+                func.lower(Item.name).like(func.lower(item_name))
+            ).one()
+        except NoResultFound:
+            response = make_response('Item not found.', 404)
+            return response
+
+        item_to_edit.name = name
+        item_to_edit.description = description
+        session.add(item_to_edit)
+        session.commit()
+
+        response = make_response("Item edited succesfully.", 200)
+        return response
+    else:
+        return "The page to edit the selected item."
 
 
 @app.route('/catalog/<string:category_name>/<string:item_name>/delete/')
