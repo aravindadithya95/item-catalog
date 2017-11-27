@@ -167,9 +167,34 @@ def edit_item(category_name, item_name):
         return "The page to edit the selected item."
 
 
-@app.route('/catalog/<string:category_name>/<string:item_name>/delete/')
+@app.route('/catalog/<string:category_name>/items/<string:item_name>/delete/', methods=['GET', 'POST'])
 def delete_item(category_name, item_name):
-    return "The page to delete the selected item."
+    # Redirect to a standard URL if required
+    category_name_lcase = category_name.lower()
+    item_name_lcase = item_name.lower()
+    if category_name != category_name_lcase or item_name != item_name_lcase:
+        redirect_url = '/catalog/%s/items/%s/delete/' % (
+            category_name_lcase, item_name_lcase
+        )
+        return redirect(redirect_url, 302)
+
+    if request.method == 'POST':
+        item_name = item_name.replace('-', '_')
+        try:
+            item_to_delete = session.query(Item).filter(
+                func.lower(Item.name).like(func.lower(item_name))
+            ).first()
+        except NoResultFound:
+            response = make_response('Item not found.', 404)
+            return response
+
+        session.delete(item_to_delete)
+        session.commit()
+
+        response = make_response('Item deleted succesfully', 200)
+        return response
+    else:
+        return "The page to delete the selected item."
 
 
 if __name__ == '__main__':
