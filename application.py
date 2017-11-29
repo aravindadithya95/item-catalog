@@ -77,11 +77,15 @@ def show_item(category_name, item_name):
 @app.route('/catalog/new/', methods=['GET', 'POST'])
 def new_item():
     if request.method == 'POST':
-        # Get form data
-        name = 'New Item'
-        description = 'Description for New Item.'
-        category_name = 'Hockey'
+        # Form data
+        name = request.form['name']
+        description = request.form['description']
+        category_name = request.form['category']
         user_id = 1
+
+        if not name:
+            response = make_response("Invalid POST request.", 400)
+            return response
 
         # Get Category ID
         try:
@@ -123,9 +127,13 @@ def new_item():
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit/', methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
     if request.method == 'POST':
-        # Get form data
-        name = 'New Name'
-        description = 'New description'
+        # Form data
+        name = request.form['name']
+        description = request.form['description']
+
+        if not name:
+            response = make_response("Invalid POST request.", 400)
+            return response
 
         # Check if the new name already exists in that category
         try:
