@@ -23,7 +23,14 @@ session = DBSession()
 @app.route('/')
 @app.route('/catalog/')
 def show_catalog():
+    # Redirect if required
+    if request.path == '/':
+        redirect_url = '/catalog/'
+        return redirect(redirect_url, 302)
+
+    # Get the catalog
     catalog = session.query(Category.name).all()
+
     output = ''
     for category in catalog:
         output += category.name + '<br>'
@@ -33,15 +40,15 @@ def show_catalog():
 @app.route('/catalog/<string:category_name>/')
 @app.route('/catalog/<string:category_name>/items/')
 def show_category(category_name):
-    # Redirect to a standard URL if required
-    category_name_lcase = category_name.lower()
-    if category_name != category_name_lcase:
-        redirect_url = request.url.replace(category_name, category_name_lcase)
+    # Redirect if required
+    if not request.path.endswith('/items/'):
+        redirect_url = request.path + 'items/'
         return redirect(redirect_url, 302)
 
+    # Get the items
     items = session.query(Item.name).filter(
         Item.category_id == Category.id,
-        func.lower(Category.name) == category_name
+        Category.name == category_name
     ).all()
 
     output = ''
@@ -52,32 +59,19 @@ def show_category(category_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/')
 def show_item(category_name, item_name):
-    # Redirect to a standard URL if required
-    category_name_lcase = category_name.lower()
-    item_name_lcase = item_name.lower()
-    if category_name != category_name_lcase or item_name != item_name_lcase:
-        redirect_url = '/catalog/%s/items/%s/' % (
-            category_name_lcase, item_name_lcase
-        )
-        return redirect(redirect_url, 302)
-
-    item_name = item_name.replace('-', '_')
+    # Get the item information
     try:
-        items = session.query(Item.name, Item.description).filter(
+        item = session.query(Item.name, Item.description).filter(
+            Item.name == item_name,
             Item.category_id == Category.id,
-            func.lower(Item.name).like(item_name)
-        ).all()
+            Category.name == category_name
+        ).one()
     except NoResultFound:
         response = make_response("Item not found.", 404)
         return response
 
-    for item in items:
-        if item.name.lower().replace(' ', '-') == item_name.replace('_', '-'):
-            output = item.name + "<br>" + item.description
-            return output
-
-    response = make_response("Item not found.", 404)
-    return response
+    output = item.name + "<br>" + item.description
+    return output
 
 
 @app.route('/catalog/new/', methods=['GET', 'POST'])
