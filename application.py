@@ -122,29 +122,36 @@ def new_item():
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit/', methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
-    # Redirect to a standard URL if required
-    category_name_lcase = category_name.lower()
-    item_name_lcase = item_name.lower()
-    if category_name != category_name_lcase or item_name != item_name_lcase:
-        redirect_url = '/catalog/%s/items/%s/edit/' % (
-            category_name_lcase, item_name_lcase
-        )
-        return redirect(redirect_url, 302)
-
     if request.method == 'POST':
-        # Form data
-        name = 'New Item 2'
+        # Get form data
+        name = 'New Name'
         description = 'New description'
 
-        item_name = item_name.replace('-', '_')
+        # Check if the new name already exists in that category
+        try:
+            item_to_edit = session.query(Item.id).filter(
+                Item.name == name,
+                Item.category_id == Category.id,
+                Category.name == category_name
+            ).one()
+        except NoResultFound:
+            pass
+        else:
+            response = make_response("Item already exists in that category.", 409)
+            return response
+
+        # Get the item
         try:
             item_to_edit = session.query(Item).filter(
-                func.lower(Item.name).like(func.lower(item_name))
+                Item.name == item_name,
+                Item.category_id == Category.id,
+                Category.name == category_name
             ).one()
         except NoResultFound:
             response = make_response('Item not found.', 404)
             return response
 
+        # Edit item
         item_to_edit.name = name
         item_to_edit.description = description
         session.add(item_to_edit)
