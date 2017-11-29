@@ -165,25 +165,19 @@ def edit_item(category_name, item_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/delete/', methods=['GET', 'POST'])
 def delete_item(category_name, item_name):
-    # Redirect to a standard URL if required
-    category_name_lcase = category_name.lower()
-    item_name_lcase = item_name.lower()
-    if category_name != category_name_lcase or item_name != item_name_lcase:
-        redirect_url = '/catalog/%s/items/%s/delete/' % (
-            category_name_lcase, item_name_lcase
-        )
-        return redirect(redirect_url, 302)
-
     if request.method == 'POST':
-        item_name = item_name.replace('-', '_')
+        # Get the item
         try:
             item_to_delete = session.query(Item).filter(
-                func.lower(Item.name).like(func.lower(item_name))
-            ).first()
+                Item.name == item_name,
+                Item.category_id == Category.id,
+                Category.name == category_name
+            ).one()
         except NoResultFound:
             response = make_response('Item not found.', 404)
             return response
 
+        # Delete item
         session.delete(item_to_delete)
         session.commit()
 
