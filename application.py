@@ -64,8 +64,11 @@ def show_item(category_name, item_name):
         response = make_response("Item not found.", 404)
         return response
 
-    output = item.name + "<br>" + item.description
-    return output
+    return render_template(
+        'item.html',
+        item_name=item_name,
+        item_description=item.description
+    )
 
 
 @app.route('/catalog/new/', methods=['GET', 'POST'])
