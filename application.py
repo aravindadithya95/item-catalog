@@ -37,6 +37,15 @@ def show_catalog():
 @app.route('/catalog/<string:category_name>/')
 @app.route('/catalog/<string:category_name>/items/')
 def show_category(category_name):
+    # Check if category exists
+    try:
+        session.query(Category.id).filter_by(
+            name=category_name
+        ).one()
+    except NoResultFound:
+        response = make_response("Invalid category name.", 404)
+        return response
+
     # Redirect if required
     if not request.path.endswith('/items/'):
         redirect_url = request.path + 'items/'
