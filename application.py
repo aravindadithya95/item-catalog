@@ -50,11 +50,6 @@ def show_category(category_name):
 
     return render_template('category.html', category_name=category_name, items=items)
 
-    output = ''
-    for item in items:
-        output += item.name + '<br>'
-    return output
-
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/')
 def show_item(category_name, item_name):
