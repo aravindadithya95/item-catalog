@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, url_for
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -71,13 +71,12 @@ def show_item(category_name, item_name):
     )
 
 
-@app.route('/catalog/new/', methods=['GET', 'POST'])
-def new_item():
+@app.route('/catalog/<string:category_name>/new/', methods=['GET', 'POST'])
+def new_item(category_name):
     if request.method == 'POST':
         # Form data
         name = request.form['name']
         description = request.form['description']
-        category_name = request.form['category']
         user_id = 1
 
         if not name:
@@ -118,7 +117,16 @@ def new_item():
         response = make_response("Item added succesfully.", 201)
         return response
     else:
-        return "The page to add a new item to the category."
+        # Check if the category exists
+        try:
+            session.query(Category.id).filter_by(
+                name=category_name
+            ).one()
+        except NoResultFound:
+            response = make_response("Invalid category name.", 404)
+            return response
+
+        return render_template('new_item.html', category_name=category_name)
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit/', methods=['GET', 'POST'])

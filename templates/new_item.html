@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+
+{% block title %}
+  Add Item | {{ category_name }}
+{% endblock %}
+
+{% block content %}
+  <div class="container text-center">
+    <h1>{{ category_name }}</h1>
+    <h5>New Item</h5>
+    <form action="{{ url_for('new_item', category_name=category_name) }}" method="post">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" class="form-control text-center" name="name" placeholder="Enter item name" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" class="form-control text-center" name="description" placeholder="Enter item description">
+      </div>
+      <button type="submit" class="btn btn-primary">Add Item</button>
+    </form>
+  </div>
+{% endblock %}
