@@ -207,7 +207,7 @@ def delete_item(category_name, item_name):
         response = make_response('Item deleted succesfully', 200)
         return response
     else:
-        return "The page to delete the selected item."
+        return render_template('delete_item.html', item_name=item_name, category_name=category_name)
 
 
 if __name__ == '__main__':
