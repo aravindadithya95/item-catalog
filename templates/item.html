@@ -6,7 +6,14 @@
 
 {% block content %}
   <div class="container text-center">
-    <h1>{{ item_name }}</h1>
-    {{ item_description }}
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">{{ item_name }}</h4>
+        <h6 class="card-subtitle mb-2 text-muted">Description</h6>
+        <p class="card-text">{{ item_description }}</p>
+        <a href="#" class="card-link">Edit</a>
+        <a href="#" class="card-link">Delete</a>
+      </div>
+    </div>
   </div>
 {% endblock %}
