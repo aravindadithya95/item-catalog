@@ -76,7 +76,8 @@ def show_item(category_name, item_name):
     return render_template(
         'item.html',
         item_name=item_name,
-        item_description=item.description
+        item_description=item.description,
+        category_name=category_name
     )
 
 
@@ -182,7 +183,7 @@ def edit_item(category_name, item_name):
         response = make_response("Item edited succesfully.", 200)
         return response
     else:
-        return "The page to edit the selected item."
+        return render_template('edit_item.html', item_name=item_name, category_name=category_name)
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/delete/', methods=['GET', 'POST'])
