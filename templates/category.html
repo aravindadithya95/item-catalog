@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+
+{% block title %}
+  {{ category_name }} | Item Catalog
+{% endblock %}
+
+{% block content %}
+  <div class="container text-center">
+    <h1>{{ category_name }}</h1>
+    <ul class="list-unstyled">
+      {% for item in items %}
+        <a href="{{ url_for('show_item', category_name=category_name, item_name=item.name) }}">
+          <li>{{ item.name }}</li>
+        </a>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

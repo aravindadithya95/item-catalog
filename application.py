@@ -48,6 +48,8 @@ def show_category(category_name):
         Category.name == category_name
     ).all()
 
+    return render_template('category.html', category_name=category_name, items=items)
+
     output = ''
     for item in items:
         output += item.name + '<br>'
