@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -31,10 +31,7 @@ def show_catalog():
     # Get the catalog
     catalog = session.query(Category.name).all()
 
-    output = ''
-    for category in catalog:
-        output += category.name + '<br>'
-    return output
+    return render_template('catalog.html', catalog=catalog)
 
 
 @app.route('/catalog/<string:category_name>/')
