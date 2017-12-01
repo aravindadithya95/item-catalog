@@ -108,12 +108,20 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
+    # If user doesn't exist in database, make a new one
+    user_id = get_user_id(login_session['email'])
+    if not user_id:
+        user_id = create_user(login_session)
+
+    login_session['user_id'] = user_id
+
     output = '''
         <h1>Welcome, %s!</h1>
         <img src="%s"
              style = "width: 300px; height: 300px;
                       border-radius: 150px; -webkit-border-radius: 150px;
-                      -moz-border-radius: 150px;" alt="Profile Picture">
+                      -moz-border-radius: 150px;"
+             alt="Profile Picture">
     ''' % (login_session['username'], login_session['picture'])
 
     flash("You are now logged in as %s." % login_session['username'], 'success')
@@ -135,12 +143,6 @@ def disconnect():
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
-    print url
-    print login_session['gplus_id']
-    print access_token
-    print login_session['username']
-    print login_session['email']
-    print result
 
     # Reset user session
     if result['status'] == '200':
@@ -149,13 +151,14 @@ def disconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
-        response = make_response(json.dumps("Successfully disconnected."), 200)
-        response.headers['content-type'] = 'application/json'
-        return response
+
+        flash("Sucessfully logged out.", 'success')
+
+        return redirect('/catalog')
     else:
-        response = make_response(json.dumps("Failed to revoke token for given user.", 400))
-        response.headers['content-type'] = 'application/json'
-        return response
+        flash("Failed to revoke token for user.", 'error')
+
+        return redirect('/catalog')
 
 
 @app.route('/')
@@ -195,7 +198,11 @@ def show_category(category_name):
         Category.name == category_name
     ).all()
 
-    return render_template('category.html', category_name=category_name, items=items)
+    # Check if user is logged in
+    if 'username' not in login_session:
+        return render_template('public_category.html', category_name=category_name, items=items)
+    else:
+        return render_template('category.html', category_name=category_name, items=items)
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>')
@@ -211,21 +218,41 @@ def show_item(category_name, item_name):
         response = make_response("Item not found.", 404)
         return response
 
-    return render_template(
-        'item.html',
-        item_name=item_name,
-        item_description=item.description,
-        category_name=category_name
-    )
+
+    # Check if user is authorized for more options
+    creator_id = session.query(Item.user_id).filter(
+        Item.name == item_name,
+        Item.category_id == Category.id,
+        Category.name == category_name
+    ).one().user_id
+    if 'username' not in login_session or login_session['user_id'] != creator_id:
+        return render_template(
+            'public_item.html',
+            item_name=item_name,
+            item_description=item.description,
+            category_name=category_name
+        )
+    else:
+        return render_template(
+            'item.html',
+            item_name=item_name,
+            item_description=item.description,
+            category_name=category_name
+        )
 
 
 @app.route('/catalog/<string:category_name>/new', methods=['GET', 'POST'])
 def new_item(category_name):
+    # Check if user is logged in
+    if 'username' not in login_session:
+        return redirect('/catalog')
+
     if request.method == 'POST':
         # Form data
         name = request.form['name']
         description = request.form['description']
-        user_id = 1
+
+        user_id = login_session['user_id']
 
         if not name:
             response = make_response("Invalid POST request.", 400)
@@ -281,6 +308,15 @@ def new_item(category_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit', methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
+    # Check if user is authorized
+    creator_id = session.query(Item.user_id).filter(
+        Item.name == item_name,
+        Item.category_id == Category.id,
+        Category.name == category_name
+    ).one().user_id
+    if 'username' not in login_session or login_session['user_id'] != creator_id:
+        return redirect('/catalog')
+
     if request.method == 'POST':
         # Form data
         name = request.form['name']
@@ -332,6 +368,15 @@ def edit_item(category_name, item_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/delete', methods=['GET', 'POST'])
 def delete_item(category_name, item_name):
+    # Check if user is authorized
+    creator_id = session.query(Item.user_id).filter(
+        Item.name == item_name,
+        Item.category_id == Category.id,
+        Category.name == category_name
+    ).one().user_id
+    if 'username' not in login_session or login_session['user_id'] != creator_id:
+        return redirect('/catalog')
+
     if request.method == 'POST':
         # Get the item
         try:
@@ -354,6 +399,31 @@ def delete_item(category_name, item_name):
         return redirect(redirect_url)
     else:
         return render_template('delete_item.html', item_name=item_name, category_name=category_name)
+
+
+def create_user(login_session):
+    new_user = User(
+        name=login_session['username'],
+        email=login_session['email'],
+        picture=login_session['picture']
+    )
+    session.add(new_user)
+    session.commit()
+
+    return get_user_id(login_session['email'])
+
+
+def get_user_info(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def get_user_id(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
 
 
 if __name__ == '__main__':

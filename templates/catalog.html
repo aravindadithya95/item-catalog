@@ -6,6 +6,7 @@
 
 {% block content %}
   <div class="container text-center">
+    {% include "flash.html" %}
     <h1>Categories</h1>
     <div class="list-group">
       {% for category in catalog %}

@@ -24,7 +24,7 @@
       </span>
     </div>
 
-    <div class="result">
+    <div id="result">
     </div>
 
     <script>
@@ -47,7 +47,7 @@
             success: function(result) {
               // Handle or verify the server response if necessary.
               if (result) {
-                $('#result').html("Login Successful!</br>" + result + "</br>Redirecting...")
+                $('#result').html(result + "</br>Redirecting...")
                 setTimeout(function() {
                   window.location.href = '/catalog';
                 }, 4000);

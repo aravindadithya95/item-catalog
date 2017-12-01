@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+
+{% block title %}
+  {{ item_name }} | Item Catalog
+{% endblock %}
+
+{% block content %}
+  <div class="container text-center">
+    <div class="navigation text-left">
+      <a href="{{ url_for('show_category', category_name=category_name) }}">
+        <button type="button" class="btn btn-secondary">< {{ category_name }}</button>
+      </a>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">{{ item_name }}</h4>
+        <h6 class="card-subtitle mb-2 text-muted">Category</h6>
+        <p class="card-text">
+          <a href="{{ url_for('show_category', category_name=category_name) }}">
+            {{ category_name }}
+          </a>
+        </p>
+        </a>
+        <h6 class="card-subtitle mb-2 text-muted">Description</h6>
+        <p class="card-text">{{ item_description }}</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
