@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, flash
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -124,8 +124,10 @@ def new_item(category_name):
         session.add(new_item)
         session.commit()
 
-        response = make_response("Item added succesfully.", 201)
-        return response
+        flash("Menu Item (%s) added." % name, 'success')
+
+        redirect_url = '/catalog/%s/items/' % category_name
+        return redirect(redirect_url)
     else:
         # Check if the category exists
         try:
@@ -160,8 +162,10 @@ def edit_item(category_name, item_name):
         except NoResultFound:
             pass
         else:
-            response = make_response("Item already exists in that category.", 409)
-            return response
+            flash("Item already exists in that category.", 'error')
+
+            redirect_url = '/catalog/%s/items/%s/edit/' % (category_name, item_name)
+            return redirect(redirect_url)
 
         # Get the item
         try:
@@ -180,8 +184,10 @@ def edit_item(category_name, item_name):
         session.add(item_to_edit)
         session.commit()
 
-        response = make_response("Item edited succesfully.", 200)
-        return response
+        flash("Menu Item (%s) edited." % item_name, 'success')
+
+        redirect_url = '/catalog/%s/items/' % category_name
+        return redirect(redirect_url)
     else:
         return render_template('edit_item.html', item_name=item_name, category_name=category_name)
 
@@ -204,12 +210,15 @@ def delete_item(category_name, item_name):
         session.delete(item_to_delete)
         session.commit()
 
-        response = make_response('Item deleted succesfully', 200)
-        return response
+        flash("Menu Item (%s) deleted." % item_name, 'success')
+
+        redirect_url = '/catalog/%s/items/' % category_name
+        return redirect(redirect_url)
     else:
         return render_template('delete_item.html', item_name=item_name, category_name=category_name)
 
 
 if __name__ == '__main__':
+    app.secret_key = 'catalog_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=5000)
