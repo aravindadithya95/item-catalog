@@ -104,6 +104,7 @@ def gconnect():
     answer = requests.get(userinfo_url, params=params)
     data = answer.json()
 
+    login_session['provider'] = 'google'
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
@@ -129,8 +130,96 @@ def gconnect():
     return output
 
 
+@app.route('/fbconnect', methods=['POST'])
+def fbconnect():
+    # Validate state token
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['content-type'] = 'application/json'
+        return response
+
+    # Obtain the one-time-use authorization code
+    access_token = request.data
+
+    # Exchange client token for long-lived server-side token
+    app_id = json.loads(
+                open('fb_client_secrets.json', 'r').read()
+             )['web']['app_id']
+    app_secret = json.loads(
+        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
+        app_id, app_secret, access_token)
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+
+    # Use token to get user info from API
+    userinfo_url = "https://graph.facebook.com/v2.8/me"
+    token = result.split(',')[0].split(':')[1].replace('"', '')
+    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+    data = json.loads(result)
+
+    login_session['provider'] = 'facebook'
+    login_session['username'] = data["name"]
+    login_session['email'] = data["email"]
+    login_session['facebook_id'] = data["id"]
+
+    # The token must be stored in the login_session in order to properly logout
+    login_session['access_token'] = token
+
+    # Get user picture
+    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+    data = json.loads(result)
+
+    login_session['picture'] = data["data"]["url"]
+
+    # See if user exists
+    user_id = get_user_id(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+
+    login_session['user_id'] = user_id
+
+    output = '''
+        <h1>Welcome, %s!</h1>
+        <img src="%s"
+             style = "width: 300px; height: 300px;
+                      border-radius: 150px; -webkit-border-radius: 150px;
+                      -moz-border-radius: 150px;"
+             alt="Profile Picture">
+    ''' % (login_session['username'], login_session['picture'])
+
+    flash("You are now logged in as %s." % login_session['username'], 'success')
+
+    return output
+
+
 @app.route('/disconnect')
 def disconnect():
+    if 'provider' in login_session:
+        if login_session['provider'] == 'google':
+            gdisconnect()
+            del login_session['gplus_id']
+        elif login_session['provider'] == 'facebook':
+            fbdisconnect()
+            del login_session['facebook_id']
+
+        del login_session['access_token']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+
+        flash("Sucessfully logged out.", 'success')
+    else:
+        flash("You must be logged in first.", 'error')
+
+    return redirect(url_for('show_catalog'))
+
+
+def gdisconnect():
     # Check if the user is connected
     access_token = login_session.get('access_token')
     if access_token is None:
@@ -144,21 +233,24 @@ def disconnect():
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
 
-    # Reset user session
-    if result['status'] == '200':
-        del login_session['access_token']
-        del login_session['gplus_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
-
-        flash("Sucessfully logged out.", 'success')
-
-        return redirect('/catalog')
-    else:
+    if result['status'] != '200':
         flash("Failed to revoke token for user.", 'error')
 
-        return redirect('/catalog')
+        return redirect(url_for('show_catalog'))
+
+    return 'success'
+
+
+@app.route('/fbdisconnect')
+def fbdisconnect():
+    facebook_id = login_session['facebook_id']
+    # The access token must me included to successfully logout
+    access_token = login_session['access_token']
+    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id, access_token)
+    h = httplib2.Http()
+    result = h.request(url, 'DELETE')[1]
+
+    return 'success'
 
 
 @app.route('/')
@@ -166,8 +258,7 @@ def disconnect():
 def show_catalog():
     # Redirect if required
     if request.path == '/':
-        redirect_url = '/catalog'
-        return redirect(redirect_url, 302)
+        return redirect(url_for('show_catalog'), 302)
 
     # Get the catalog
     catalog = session.query(Category.name).all()
@@ -245,7 +336,7 @@ def show_item(category_name, item_name):
 def new_item(category_name):
     # Check if user is logged in
     if 'username' not in login_session:
-        return redirect('/catalog')
+        return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
         # Form data
@@ -291,8 +382,7 @@ def new_item(category_name):
 
         flash("Menu Item (%s) added." % name, 'success')
 
-        redirect_url = '/catalog/%s/items' % category_name
-        return redirect(redirect_url)
+        return redirect(url_for('show_category', category_name=category_name))
     else:
         # Check if the category exists
         try:
@@ -315,7 +405,7 @@ def edit_item(category_name, item_name):
         Category.name == category_name
     ).one().user_id
     if 'username' not in login_session or login_session['user_id'] != creator_id:
-        return redirect('/catalog')
+        return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
         # Form data
@@ -338,8 +428,9 @@ def edit_item(category_name, item_name):
         else:
             flash("Item already exists in that category.", 'error')
 
-            redirect_url = '/catalog/%s/items/%s/edit' % (category_name, item_name)
-            return redirect(redirect_url)
+            return redirect(url_for(
+                'edit_item', category_name=category_name, item_name=item_name
+            ))
 
         # Get the item
         try:
@@ -360,10 +451,11 @@ def edit_item(category_name, item_name):
 
         flash("Menu Item (%s) edited." % item_name, 'success')
 
-        redirect_url = '/catalog/%s/items' % category_name
-        return redirect(redirect_url)
+        return redirect(url_for('show_category', category_name=category_name))
     else:
-        return render_template('edit_item.html', item_name=item_name, category_name=category_name)
+        return render_template(
+            'edit_item.html', item_name=item_name, category_name=category_name
+        )
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/delete', methods=['GET', 'POST'])
@@ -375,7 +467,7 @@ def delete_item(category_name, item_name):
         Category.name == category_name
     ).one().user_id
     if 'username' not in login_session or login_session['user_id'] != creator_id:
-        return redirect('/catalog')
+        return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
         # Get the item
@@ -395,10 +487,11 @@ def delete_item(category_name, item_name):
 
         flash("Menu Item (%s) deleted." % item_name, 'success')
 
-        redirect_url = '/catalog/%s/items' % category_name
-        return redirect(redirect_url)
+        return redirect(url_for('show_category', category_name=category_name))
     else:
-        return render_template('delete_item.html', item_name=item_name, category_name=category_name)
+        return render_template(
+            'delete_item.html', item_name=item_name, category_name=category_name
+        )
 
 
 def create_user(login_session):
