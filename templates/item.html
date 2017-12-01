@@ -6,6 +6,11 @@
 
 {% block content %}
   <div class="container text-center">
+    <div class="navigation text-left">
+      <a href="{{ url_for('show_category', category_name=category_name) }}">
+        <button type="button" class="btn btn-secondary">< {{ category_name }}</button>
+      </a>
+    </div>
     <div class="card">
       <div class="card-body">
         <h4 class="card-title">{{ item_name }}</h4>

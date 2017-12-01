@@ -6,6 +6,11 @@
 
 {% block content %}
   <div class="container text-center">
+    <div class="navigation text-left">
+      <a href="{{ url_for('show_item', category_name=category_name, item_name=item_name) }}">
+        <button type="button" class="btn btn-secondary">< Back</button>
+      </a>
+    </div>
     <h1>{{ item_name }}</h1>
     <h5>Delete Item</h5>
     <form action="{{ url_for('delete_item', category_name=category_name, item_name=item_name) }}" method="post">

@@ -6,6 +6,11 @@
 
 {% block content %}
   <div class="container text-center">
+    <div class="navigation text-left">
+      <a href="{{ url_for('show_catalog') }}">
+        <button type="button" class="btn btn-secondary">< Catalog</button>
+      </a>
+    </div>
     <h1>{{ category_name }}</h1>
     {% include "flash.html" %}
     <a href="{{ url_for('new_item', category_name=category_name) }}">+New Item</a>
