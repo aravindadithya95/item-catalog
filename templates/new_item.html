@@ -8,9 +8,10 @@
   <div class="container text-center">
     <div class="navigation text-left">
       <a href="{{ url_for('show_category', category_name=category_name) }}">
-        <button type="button" class="btn btn-secondary">< Back</button>
+        <button type="button" class="btn btn-secondary">< {{ category_name }}</button>
       </a>
     </div>
+    {% include "flash.html" %}
     <h1>New Item</h1>
     <h6>Category: {{ category_name }}</h6>
     <form action="{{ url_for('new_item', category_name=category_name) }}" method="post">
@@ -22,7 +23,7 @@
         <label for="description">Description</label>
         <input type="text" class="form-control text-center" name="description" placeholder="Enter item description" maxlength="250">
       </div>
-      <button type="submit" class="btn btn-primary">Add Item</button>
+      <button type="submit" class="btn btn-success">Add Item</button>
     </form>
   </div>
 {% endblock %}

@@ -16,6 +16,8 @@ import httplib2
 import json
 import requests
 
+import time
+
 app = Flask(__name__)
 
 # Connect to the database
@@ -35,7 +37,7 @@ def show_login():
                     for x in range(32))
     login_session['state'] = state
 
-    return render_template('login.html', STATE=state)
+    return render_template('login.html', STATE=state, time=time.time())
 
 
 @app.route('/gconnect', methods=['POST'])
@@ -263,7 +265,7 @@ def show_catalog():
     # Get the catalog
     catalog = session.query(Category.name).all()
 
-    return render_template('catalog.html', catalog=catalog)
+    return render_template('catalog.html', catalog=catalog, time=time.time())
 
 
 @app.route('/catalog/<string:category_name>')
@@ -291,9 +293,9 @@ def show_category(category_name):
 
     # Check if user is logged in
     if 'username' not in login_session:
-        return render_template('public_category.html', category_name=category_name, items=items)
+        return render_template('public_category.html', category_name=category_name, items=items, time=time.time())
     else:
-        return render_template('category.html', category_name=category_name, items=items)
+        return render_template('category.html', category_name=category_name, items=items, time=time.time())
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>')
@@ -321,14 +323,16 @@ def show_item(category_name, item_name):
             'public_item.html',
             item_name=item_name,
             item_description=item.description,
-            category_name=category_name
+            category_name=category_name,
+            time=time.time()
         )
     else:
         return render_template(
             'item.html',
             item_name=item_name,
             item_description=item.description,
-            category_name=category_name
+            category_name=category_name,
+            time=time.time()
         )
 
 
@@ -367,8 +371,11 @@ def new_item(category_name):
         except NoResultFound:
             pass
         else:
-            response = make_response("Item already exists in that category.", 409)
-            return response
+            flash("Item already exists in that category.", 'error')
+
+            return redirect(url_for(
+                'new_item', category_name=category_name
+            ))
 
         # Add item
         new_item = Item(
@@ -393,7 +400,7 @@ def new_item(category_name):
             response = make_response("Invalid category name.", 404)
             return response
 
-        return render_template('new_item.html', category_name=category_name)
+        return render_template('new_item.html', category_name=category_name, time=time.time())
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit', methods=['GET', 'POST'])
@@ -454,7 +461,8 @@ def edit_item(category_name, item_name):
             'edit_item.html',
             item_name=item_name,
             category_name=category_name,
-            item_description=item_to_edit.description
+            item_description=item_to_edit.description,
+            time=time.time()
         )
 
 
@@ -490,7 +498,7 @@ def delete_item(category_name, item_name):
         return redirect(url_for('show_category', category_name=category_name))
     else:
         return render_template(
-            'delete_item.html', item_name=item_name, category_name=category_name
+            'delete_item.html', item_name=item_name, category_name=category_name, time=time.time()
         )
 
 

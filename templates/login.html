@@ -11,6 +11,8 @@
 {% endblock %}
 
 {% block content %}
+  <h1 class="login-h1 text-center">Choose your sign in option</h1>
+
   <div class="container text-center">
     <div id="signinButton">
       <span class="g-signin"
@@ -34,6 +36,7 @@
           // Hide the sign-in buttons now that the user is authorized
           $('#signinButton').attr('style', 'display: none');
           $('#fb-button').attr('style', 'display: none');
+          $('.login-h1').attr('style', 'display: none');
 
           /*
           * Send the one-time-use code to the server, if the server responds,
@@ -109,6 +112,7 @@
                 // Hide the sign-in buttons now that the user is authorized
                 $('#signinButton').attr('style', 'display: none');
                 $('#fb-button').attr('style', 'display: none');
+                $('.login-h1').attr('style', 'display: none');
 
                 $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
                 setTimeout(function() {
