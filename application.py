@@ -398,12 +398,19 @@ def new_item(category_name):
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit', methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
+    # Get the item
+    try:
+        item_to_edit = session.query(Item).filter(
+            Item.name == item_name,
+            Item.category_id == Category.id,
+            Category.name == category_name
+        ).one()
+    except NoResultFound:
+        response = make_response('Item not found.', 404)
+        return response
+
     # Check if user is authorized
-    creator_id = session.query(Item.user_id).filter(
-        Item.name == item_name,
-        Item.category_id == Category.id,
-        Category.name == category_name
-    ).one().user_id
+    creator_id = item_to_edit.user_id
     if 'username' not in login_session or login_session['user_id'] != creator_id:
         return redirect(url_for('show_catalog'))
 
@@ -416,32 +423,22 @@ def edit_item(category_name, item_name):
             response = make_response("Invalid POST request.", 400)
             return response
 
-        # Check if the new name already exists in that category
-        try:
-            item_to_edit = session.query(Item.id).filter(
-                Item.name == name,
-                Item.category_id == Category.id,
-                Category.name == category_name
-            ).one()
-        except NoResultFound:
-            pass
-        else:
-            flash("Item already exists in that category.", 'error')
+        if name != item_name:
+            # Check if the new name already exists in that category
+            try:
+                item_to_edit = session.query(Item.id).filter(
+                    Item.name == name,
+                    Item.category_id == Category.id,
+                    Category.name == category_name
+                ).one()
+            except NoResultFound:
+                pass
+            else:
+                flash("Item already exists in that category.", 'error')
 
-            return redirect(url_for(
-                'edit_item', category_name=category_name, item_name=item_name
-            ))
-
-        # Get the item
-        try:
-            item_to_edit = session.query(Item).filter(
-                Item.name == item_name,
-                Item.category_id == Category.id,
-                Category.name == category_name
-            ).one()
-        except NoResultFound:
-            response = make_response('Item not found.', 404)
-            return response
+                return redirect(url_for(
+                    'edit_item', category_name=category_name, item_name=item_name
+                ))
 
         # Edit item
         item_to_edit.name = name
@@ -454,7 +451,10 @@ def edit_item(category_name, item_name):
         return redirect(url_for('show_category', category_name=category_name))
     else:
         return render_template(
-            'edit_item.html', item_name=item_name, category_name=category_name
+            'edit_item.html',
+            item_name=item_name,
+            category_name=category_name,
+            item_description=item_to_edit.description
         )
 
 
