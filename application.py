@@ -179,7 +179,7 @@ def fbconnect():
     # See if user exists
     user_id = get_user_id(login_session['email'])
     if not user_id:
-        user_id = createUser(login_session)
+        user_id = create_user(login_session)
 
     login_session['user_id'] = user_id
 
