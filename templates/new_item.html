@@ -11,8 +11,8 @@
         <button type="button" class="btn btn-secondary">< Back</button>
       </a>
     </div>
-    <h1>{{ category_name }}</h1>
-    <h5>New Item</h5>
+    <h1>New Item</h1>
+    <h6>Category: {{ category_name }}</h6>
     <form action="{{ url_for('new_item', category_name=category_name) }}" method="post">
       <div class="form-group">
         <label for="name">Name</label>
