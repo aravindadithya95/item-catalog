@@ -1,0 +1,14 @@
+{% extends "main.html" %}
+
+{% block title %}
+  {{ category_name }} | Item Catalog
+{% endblock %}
+
+{% block content %}
+<div class="container text-center">
+  <h1>Your API token</h1>
+  (Valid for ten minutes)
+  <br>
+  {{ token }}
+</div>
+{% endblock %}

@@ -19,6 +19,8 @@ import requests
 import time
 from flask import jsonify
 
+from flask_httpauth import HTTPTokenAuth
+
 app = Flask(__name__)
 
 # Connect to the database
@@ -30,6 +32,8 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+
+auth = HTTPTokenAuth()
 
 
 @app.route('/login')
@@ -528,13 +532,43 @@ def get_user_id(email):
         return None
 
 
+@app.route('/api/v1/token')
+def get_auth_token():
+    # Check if user is logged in
+    if 'username' not in login_session:
+        return redirect(url_for('show_catalog'))
+
+    user = session.query(User).filter_by(id=login_session['user_id']).one()
+    token = user.generate_auth_token()
+
+    return render_template('get_token.html', token=token.decode('ascii'))
+
+
+@auth.verify_token
+def verify_auth_token(token):
+    if not token:
+        return False
+
+    user_id = User.verify_auth_token(token)
+    print token
+    print user_id
+
+    if not user_id:
+        return False
+
+    return True
+
+
+
 @app.route('/api/v1/catalog')
+@auth.login_required
 def catalog_json():
     catalog = session.query(Category).all()
     return jsonify(Categories=[category.serialize for category in catalog])
 
 
-@app.route('/api/v1/catalog/<string:category_name>')
+@app.route('/api/v1/catalog/<string:category_name>/items')
+@auth.login_required
 def category_json(category_name):
     try:
         category = session.query(Item).filter(
@@ -547,6 +581,7 @@ def category_json(category_name):
 
 
 @app.route('/api/v1/catalog/<string:category_name>/items/<string:item_name>')
+@auth.login_required
 def item_json(category_name, item_name):
     try:
         item = session.query(Item).filter(
@@ -562,4 +597,4 @@ def item_json(category_name, item_name):
 if __name__ == '__main__':
     app.secret_key = 'catalog_secret_key'
     app.debug = True
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, threaded=True)
