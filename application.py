@@ -40,7 +40,7 @@ def show_login():
     return render_template('login.html', STATE=state, time=time.time())
 
 
-@app.route('/gconnect', methods=['POST'])
+@app.route('/oauth/google', methods=['POST'])
 def gconnect():
     # Validate state token
     if request.args.get('state') != login_session['state']:
@@ -132,7 +132,7 @@ def gconnect():
     return output
 
 
-@app.route('/fbconnect', methods=['POST'])
+@app.route('/oauth/facebook', methods=['POST'])
 def fbconnect():
     # Validate state token
     if request.args.get('state') != login_session['state']:
@@ -199,7 +199,7 @@ def fbconnect():
     return output
 
 
-@app.route('/disconnect')
+@app.route('/logout')
 def disconnect():
     if 'provider' in login_session:
         if login_session['provider'] == 'google':

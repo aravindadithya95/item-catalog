@@ -45,7 +45,7 @@
           */
           $.ajax({
             type: 'POST',
-            url: '/gconnect?state={{STATE}}',
+            url: '/oauth/google?state={{STATE}}',
             processData: false,
             data: authResult['code'],
             contentType: 'application/octet-stream; charset=utf-8',
@@ -102,7 +102,7 @@
           console.log('Successful login for: ' + response.name);
           $.ajax({
             type: 'POST',
-            url: '/fbconnect?state={{STATE}}',
+            url: '/oauth/facebook?state={{STATE}}',
             processData: false,
             data: access_token,
             contentType: 'application/octet-stream; charset=utf-8',
@@ -114,7 +114,7 @@
                 $('#fb-button').attr('style', 'display: none');
                 $('.login-h1').attr('style', 'display: none');
 
-                $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
+                $('#result').html(result + '</br>Redirecting...')
                 setTimeout(function() {
                   window.location.href = "/catalog";
                 }, 4000);
