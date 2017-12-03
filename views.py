@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import func
 
-from database_setup import Base, User, Category, Item
+from models import Base, User, Category, Item
 
 from flask import make_response, request, redirect
 
@@ -17,6 +17,7 @@ import json
 import requests
 
 import time
+from flask import jsonify
 
 app = Flask(__name__)
 
@@ -525,6 +526,37 @@ def get_user_id(email):
         return user.id
     except:
         return None
+
+
+@app.route('/api/v1/catalog')
+def catalog_json():
+    catalog = session.query(Category).all()
+    return jsonify(Categories=[category.serialize for category in catalog])
+
+
+@app.route('/api/v1/catalog/<string:category_name>')
+def category_json(category_name):
+    try:
+        category = session.query(Item).filter(
+            Item.category_id == Category.id,
+            Category.name == category_name
+        ).all()
+    except:
+        return jsonify("Invalid category name.")
+    return jsonify(Items=[item.serialize for item in category])
+
+
+@app.route('/api/v1/catalog/<string:category_name>/items/<string:item_name>')
+def item_json(category_name, item_name):
+    try:
+        item = session.query(Item).filter(
+            Item.name == item_name,
+            Item.category_id == Category.id,
+            Category.name == category_name
+        ).one()
+    except NoResultFound:
+        return jsonify("Invalid category or item name.")
+    return jsonify(Item=[item.serialize])
 
 
 if __name__ == '__main__':

@@ -21,6 +21,13 @@ class Category(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
 
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
 
 class Item(Base):
     __tablename__ = 'item'
@@ -33,6 +40,14 @@ class Item(Base):
 
     category = relationship(Category)
     user = relationship(User)
+
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description
+        }
 
 
 engine = create_engine('postgresql:///catalog')
