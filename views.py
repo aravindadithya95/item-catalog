@@ -550,8 +550,6 @@ def verify_auth_token(token):
         return False
 
     user_id = User.verify_auth_token(token)
-    print token
-    print user_id
 
     if not user_id:
         return False
