@@ -45,7 +45,7 @@
           */
           $.ajax({
             type: 'POST',
-            url: '/oauth/google?state={{STATE}}',
+            url: '/oauth/google?state={{ STATE }}',
             processData: false,
             data: authResult['code'],
             contentType: 'application/octet-stream; charset=utf-8',

@@ -14,7 +14,7 @@
     {% include "flash.html" %}
     <h1>New Item</h1>
     <h6>Category: {{ category_name }}</h6>
-    <form action="{{ url_for('new_item', category_name=category_name) }}" method="post">
+    <form action="{{ url_for('new_item', category_name=category_name) }}?state={{ STATE }}" method="post">
       <div class="form-group">
         <label for="name">Name</label>
         <input type="text" class="form-control text-center" name="name" placeholder="Enter item name" maxlength="250" required>

@@ -96,8 +96,9 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(
+            json.dumps('Current user is already connected.'), 200
+        )
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -236,7 +237,8 @@ def gdisconnect():
         return response
 
     # Revoke access token
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    url = ('https://accounts.google.com/o/oauth2/revoke?token=%s'
+               % login_session['access_token'])
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
 
@@ -253,7 +255,8 @@ def fbdisconnect():
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id, access_token)
+    url = ('https://graph.facebook.com/%s/permissions?access_token=%s'
+                % (facebook_id, access_token))
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
 
@@ -298,9 +301,19 @@ def show_category(category_name):
 
     # Check if user is logged in
     if 'username' not in login_session:
-        return render_template('public_category.html', category_name=category_name, items=items, time=time.time())
+        return render_template(
+            'public_category.html',
+            category_name=category_name,
+            items=items,
+            time=time.time()
+        )
     else:
-        return render_template('category.html', category_name=category_name, items=items, time=time.time())
+        return render_template(
+            'category.html',
+            category_name=category_name,
+            items=items,
+            time=time.time()
+        )
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>')
@@ -323,7 +336,8 @@ def show_item(category_name, item_name):
         Item.category_id == Category.id,
         Category.name == category_name
     ).one().user_id
-    if 'username' not in login_session or login_session['user_id'] != creator_id:
+    if ('username' not in login_session or
+            login_session['user_id'] != creator_id):
         return render_template(
             'public_item.html',
             item_name=item_name,
@@ -348,6 +362,12 @@ def new_item(category_name):
         return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
+        # Check if it is the user seding the request
+        # (Protect against CSRF attacks)
+        if request.args.get('state') != login_session['state']:
+            response = make_response(json.dumps("Invalid state parameter"), 401)
+            return response
+
         # Form data
         name = request.form['name']
         description = request.form['description']
@@ -405,7 +425,17 @@ def new_item(category_name):
             response = make_response("Invalid category name.", 404)
             return response
 
-        return render_template('new_item.html', category_name=category_name, time=time.time())
+        # Generate state token
+        state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                        for x in range(32))
+        login_session['state'] = state
+
+        return render_template(
+            'new_item.html',
+            category_name=category_name,
+            time=time.time(),
+            STATE=state
+        )
 
 
 @app.route('/catalog/<string:category_name>/items/<string:item_name>/edit', methods=['GET', 'POST'])
@@ -427,6 +457,12 @@ def edit_item(category_name, item_name):
         return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
+        # Check if it is the user seding the request
+        # (Protect against CSRF attacks)
+        if request.args.get('state') != login_session['state']:
+            response = make_response(json.dumps("Invalid state parameter"), 401)
+            return response
+
         # Form data
         name = request.form['name']
         description = request.form['description']
@@ -449,7 +485,9 @@ def edit_item(category_name, item_name):
                 flash("Item already exists in that category.", 'error')
 
                 return redirect(url_for(
-                    'edit_item', category_name=category_name, item_name=item_name
+                    'edit_item',
+                    category_name=category_name,
+                    item_name=item_name
                 ))
 
         # Edit item
@@ -462,12 +500,18 @@ def edit_item(category_name, item_name):
 
         return redirect(url_for('show_category', category_name=category_name))
     else:
+        # Generate state token
+        state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                        for x in range(32))
+        login_session['state'] = state
+
         return render_template(
             'edit_item.html',
             item_name=item_name,
             category_name=category_name,
             item_description=item_to_edit.description,
-            time=time.time()
+            time=time.time(),
+            STATE=state
         )
 
 
@@ -483,6 +527,12 @@ def delete_item(category_name, item_name):
         return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
+        # Check if it is the user seding the request
+        # (Protect against CSRF attacks)
+        if request.args.get('state') != login_session['state']:
+            response = make_response(json.dumps("Invalid state parameter"), 401)
+            return response
+
         # Get the item
         try:
             item_to_delete = session.query(Item).filter(
@@ -502,8 +552,17 @@ def delete_item(category_name, item_name):
 
         return redirect(url_for('show_category', category_name=category_name))
     else:
+        # Generate state token
+        state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                        for x in range(32))
+        login_session['state'] = state
+
         return render_template(
-            'delete_item.html', item_name=item_name, category_name=category_name, time=time.time()
+            'delete_item.html',
+            item_name=item_name,
+            category_name=category_name,
+            time=time.time(),
+            STATE=state
         )
 
 
@@ -528,7 +587,7 @@ def get_user_id(email):
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id
-    except:
+    except NoResultFound:
         return None
 
 
@@ -555,7 +614,6 @@ def verify_auth_token(token):
         return False
 
     return True
-
 
 
 @app.route('/api/v1/catalog')
