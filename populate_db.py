@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from database_setup import Base, User, Category, Item
+from models import Base, User, Category, Item
 
 # Connect to the database
 engine = create_engine('postgresql:///catalog')
