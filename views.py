@@ -10,7 +10,8 @@ from models import Base, User, Category, Item
 from flask import make_response, request, redirect
 
 from flask import session as login_session
-import random, string
+import random
+import string
 from oauth2client.client import flow_from_clientsecrets, FlowExchangeError
 import httplib2
 import json
@@ -31,7 +32,9 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+CLIENT_ID = json.loads(
+    open('client_secrets.json', 'r').read()
+)['web']['client_id']
 
 auth = HTTPTokenAuth()
 
@@ -133,7 +136,10 @@ def gconnect():
              alt="Profile Picture">
     ''' % (login_session['username'], login_session['picture'])
 
-    flash("You are now logged in as %s." % login_session['username'], 'success')
+    flash(
+        "You are now logged in as %s." % login_session['username'],
+        'success'
+    )
 
     return output
 
@@ -155,15 +161,18 @@ def fbconnect():
              )['web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
-    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
-        app_id, app_secret, access_token)
+    url = (
+        'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s'  # NOQA
+    ) % (app_id, app_secret, access_token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
 
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
     token = result.split(',')[0].split(':')[1].replace('"', '')
-    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    url = (
+        'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token  # NOQA
+    )
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     data = json.loads(result)
@@ -177,7 +186,9 @@ def fbconnect():
     login_session['access_token'] = token
 
     # Get user picture
-    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    url = (
+        'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200'  # NOQA
+    ) % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
     data = json.loads(result)
@@ -200,7 +211,10 @@ def fbconnect():
              alt="Profile Picture">
     ''' % (login_session['username'], login_session['picture'])
 
-    flash("You are now logged in as %s." % login_session['username'], 'success')
+    flash(
+        "You are now logged in as %s." % login_session['username'],
+        'success'
+    )
 
     return output
 
@@ -232,13 +246,15 @@ def gdisconnect():
     access_token = login_session.get('access_token')
     if access_token is None:
         print 'Access Token is None'
-        response = make_response(json.dumps("Current user not connected."), 401)
+        response = make_response(
+            json.dumps("Current user not connected."), 401
+        )
         response.headers['content-type'] = 'application/json'
         return response
 
     # Revoke access token
     url = ('https://accounts.google.com/o/oauth2/revoke?token=%s'
-               % login_session['access_token'])
+           % login_session['access_token'])
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
 
@@ -256,7 +272,7 @@ def fbdisconnect():
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
     url = ('https://graph.facebook.com/%s/permissions?access_token=%s'
-                % (facebook_id, access_token))
+           % (facebook_id, access_token))
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
 
@@ -329,7 +345,6 @@ def show_item(category_name, item_name):
         response = make_response("Item not found.", 404)
         return response
 
-
     # Check if user is authorized for more options
     creator_id = session.query(Item.user_id).filter(
         Item.name == item_name,
@@ -365,7 +380,9 @@ def new_item(category_name):
         # Check if it is the user seding the request
         # (Protect against CSRF attacks)
         if request.args.get('state') != login_session['state']:
-            response = make_response(json.dumps("Invalid state parameter"), 401)
+            response = make_response(
+                json.dumps("Invalid state parameter"), 401
+            )
             return response
 
         # Form data
@@ -438,7 +455,8 @@ def new_item(category_name):
         )
 
 
-@app.route('/catalog/<string:category_name>/items/<string:item_name>/edit', methods=['GET', 'POST'])
+@app.route('/catalog/<string:category_name>/items/<string:item_name>/edit',
+           methods=['GET', 'POST'])
 def edit_item(category_name, item_name):
     # Get the item
     try:
@@ -453,14 +471,17 @@ def edit_item(category_name, item_name):
 
     # Check if user is authorized
     creator_id = item_to_edit.user_id
-    if 'username' not in login_session or login_session['user_id'] != creator_id:
+    if ('username' not in login_session or
+            login_session['user_id'] != creator_id):
         return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
         # Check if it is the user seding the request
         # (Protect against CSRF attacks)
         if request.args.get('state') != login_session['state']:
-            response = make_response(json.dumps("Invalid state parameter"), 401)
+            response = make_response(
+                json.dumps("Invalid state parameter"), 401
+            )
             return response
 
         # Form data
@@ -515,7 +536,8 @@ def edit_item(category_name, item_name):
         )
 
 
-@app.route('/catalog/<string:category_name>/items/<string:item_name>/delete', methods=['GET', 'POST'])
+@app.route('/catalog/<string:category_name>/items/<string:item_name>/delete',
+           methods=['GET', 'POST'])
 def delete_item(category_name, item_name):
     # Check if user is authorized
     creator_id = session.query(Item.user_id).filter(
@@ -523,14 +545,17 @@ def delete_item(category_name, item_name):
         Item.category_id == Category.id,
         Category.name == category_name
     ).one().user_id
-    if 'username' not in login_session or login_session['user_id'] != creator_id:
+    if ('username' not in login_session or
+            login_session['user_id'] != creator_id):
         return redirect(url_for('show_catalog'))
 
     if request.method == 'POST':
         # Check if it is the user seding the request
         # (Protect against CSRF attacks)
         if request.args.get('state') != login_session['state']:
-            response = make_response(json.dumps("Invalid state parameter"), 401)
+            response = make_response(
+                json.dumps("Invalid state parameter"), 401
+            )
             return response
 
         # Get the item
