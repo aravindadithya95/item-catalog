@@ -14,7 +14,7 @@
     {% include "flash.html" %}
     <h1>{{ category_name }}</h1>
     <a href="{{ url_for('new_item', category_name=category_name) }}">
-      <button class="btn btn-primary">+New Item</button>
+      <button class="btn btn-outline-primary">+New Item</button>
     </a>
     <div class="list-group">
       {% for item in items %}
