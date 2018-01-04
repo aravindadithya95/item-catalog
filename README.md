@@ -6,8 +6,8 @@ This project is part of the [Full Stack Web Developer Nanodegree](https://www.ud
 ## Getting Started
 ### Setting up the environment
 - Make sure you have **Python 2.x** installed in your machine.
-- Install VirtualBox from [here](https://www.virtualbox.org/wiki/Downloads) and vagrant from [here](https://www.vagrantup.com/downloads.html).
-- Download or clone a local copy of this [repository](https://github.com/udacity/fullstack-nanodegree-vm) and download or clone the Item Catalog repository into the vagrant directory.
+- Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads) and [Vagrant](https://www.vagrantup.com/downloads.html).
+- Download or clone a local copy of [this](https://github.com/udacity/fullstack-nanodegree-vm) repository and download or clone the Item Catalog repository into the vagrant directory.
 - To go into the vagrant environment, run the following commands from anywhere within the vagrant directory.
 ```
 vagrant up
@@ -30,7 +30,7 @@ To use your own credentials:
 - You can now access the application at [http://localhost:5000](http://localhost:5000).
 
 ### Accessing the JSON endpoints
-- Login to the application to get an API link on the nav bar, where you can claim API key valid for ten minutes.
+- Login to the application to get an API link on the nav bar, where you can claim your API key valid for ten minutes.
 - You can access an endpoint using *curl* like:
 ```
 curl -H "Authorization: Bearer <API_KEY>" <ENDPOINT>
